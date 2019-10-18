@@ -124,3 +124,34 @@ sup <- sup75 %>%
   full_join(supIRIS) %>%
   select(id, everything())
 
+sup <- sup %>%
+  rename('1990' = P90_NSCOL15P_S,
+         '1999' = P99_NSCOL15P_S,
+         '2010' = P10_NSCOL15P_S,
+         '2015' = P15_NSCOL15P_S) %>%
+  pivot_longer(c('1990', '1999', '2010', '2015'),
+               names_to = 'year',
+               values_to = 'NSCOL15P_S') %>%
+  mutate(id = as.factor(id),
+         year = as.numeric(year))
+
+supFIL <- sup %>%
+  filter(id %in% c(75, 75105, 751050000))
+
+ggplot(supFIL, aes(x = year, y = NSCOL15P_S, color = id, linetype = id, alpha = id)) +
+  #geom_col(position = "dodge") +
+  geom_line() +
+  geom_point() +
+  scale_linetype_manual(values = c('75' = 'dotted',
+                                   '75105' = 'dashed',
+                                   '751050000' = 'solid',
+                                   '751052003' = 'solid',
+                                   '751051905' = 'solid',
+                                   '751051906' = 'solid')) +
+  scale_alpha_manual(values = c('75' = 1,
+                               '75105' = 1,
+                               '751050000' = 1,
+                               '751052003' = .4,
+                               '751051905' = .4,
+                               '751051906' = .4))
+
