@@ -1,6 +1,11 @@
 library(tidyverse) # Utilities
 library(openxlsx) # Excel exports
 
+# Params
+departement <- '75' # Département de votre commune
+commune <- '75105' # Code INSEE de votre commune/arrondissement
+iris <- c('751052003', '751051905', '751051906') # Vos IRIS
+
 # Import data
 dipl90 <- read.csv("data/diplomes-1990.csv") %>% as_tibble()
 dipl99 <- read.csv("data/diplomes-1999.csv") %>% as_tibble()
@@ -124,6 +129,8 @@ sup <- sup75 %>%
   full_join(supIRIS) %>%
   select(id, everything())
 
+write.xlsx(sup, "results/diplomes.xlsx")
+
 sup <- sup %>%
   rename('1990' = P90_NSCOL15P_S,
          '1999' = P99_NSCOL15P_S,
@@ -154,4 +161,5 @@ ggplot(supFIL, aes(x = year, y = NSCOL15P_S, color = id, linetype = id, alpha = 
                                '751052003' = .4,
                                '751051905' = .4,
                                '751051906' = .4))
+
 

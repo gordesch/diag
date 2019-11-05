@@ -1,6 +1,11 @@
 library(tidyverse) # Utilities
 library(openxlsx) # Excel exports
 
+# Params
+departement <- '75' # Département de votre commune
+commune <- '75105' # Code INSEE de votre commune/arrondissement
+iris <- c('751052003', '751051905', '751051906') # Vos IRIS
+
 # Import data
 empl90 <- read.csv("data/emploi-1990.csv") %>% as_tibble()
 empl99 <- read.csv("data/emploi-1999.csv") %>% as_tibble()
@@ -62,7 +67,7 @@ empl <- empl90 %>%
   full_join(empl15)
 
 # Paris
-empl75 <- empl %>%
+emplDepartement <- empl %>%
   summarise(C90_ACT1564_CS1 = sum(AT90TAG, na.rm = TRUE) / sum(AT90TA, na.rm = TRUE) * 100,
             C99_ACT1564_CS1 = sum(AT99TAG, na.rm = TRUE) / sum(AT99TA, na.rm = TRUE) * 100,
             C10_ACT1564_CS1 = sum(C10_ACT1564_CS1, na.rm = TRUE) / sum(C10_ACT1564, na.rm = TRUE) * 100,
@@ -87,11 +92,11 @@ empl75 <- empl %>%
             C99_ACT1564_CS6 = sum(AT99TOU, na.rm = TRUE) / sum(AT99TA, na.rm = TRUE) * 100,
             C10_ACT1564_CS6 = sum(C10_ACT1564_CS6, na.rm = TRUE) / sum(C10_ACT1564, na.rm = TRUE) * 100,
             C15_ACT1564_CS6 = sum(C15_ACT1564_CS6, na.rm = TRUE) / sum(C15_ACT1564, na.rm = TRUE) * 100,) %>%
-  mutate(id = 75)
+  mutate(id = !!departement)
 
 # 5e arr
-empl75105 <- empl %>%
-  filter(COM == '75105') %>%
+emplCommune <- empl %>%
+  filter(COM == !!commune) %>%
   group_by(COM) %>%
   summarise(C90_ACT1564_CS1 = sum(AT90TAG, na.rm = TRUE) / sum(AT90TA, na.rm = TRUE) * 100,
             C99_ACT1564_CS1 = sum(AT99TAG, na.rm = TRUE) / sum(AT99TA, na.rm = TRUE) * 100,
@@ -120,8 +125,8 @@ empl75105 <- empl %>%
   rename(id = COM)
 
 # Our Neighborhood
-empl751050000 <- empl %>%
-  filter(IRIS %in% c('751052003', '751051905', '751051906')) %>%
+emplAllIRIS <- empl %>%
+  filter(IRIS %in% !!iris) %>%
   summarise(C90_ACT1564_CS1 = sum(AT90TAG, na.rm = TRUE) / sum(AT90TA, na.rm = TRUE) * 100,
             C99_ACT1564_CS1 = sum(AT99TAG, na.rm = TRUE) / sum(AT99TA, na.rm = TRUE) * 100,
             C10_ACT1564_CS1 = sum(C10_ACT1564_CS1, na.rm = TRUE) / sum(C10_ACT1564, na.rm = TRUE) * 100,
@@ -149,8 +154,8 @@ empl751050000 <- empl %>%
   mutate(id = 751050000)
 
 # Our IRIS
-emplIRIS <- empl %>%
-  filter(IRIS %in% c('751052003', '751051905', '751051906')) %>%
+emplEachIris <- empl %>%
+  filter(IRIS %in% !!iris) %>%
   group_by(IRIS) %>%
   summarise(C90_ACT1564_CS1 = sum(AT90TAG, na.rm = TRUE) / sum(AT90TA, na.rm = TRUE) * 100,
             C99_ACT1564_CS1 = sum(AT99TAG, na.rm = TRUE) / sum(AT99TA, na.rm = TRUE) * 100,
@@ -183,3 +188,5 @@ empl <- empl75 %>%
   full_join(empl751050000) %>%
   full_join(emplIRIS) %>%
   select(id, everything())
+
+write.xlsx(empl, "results/emploi.xlsx")
