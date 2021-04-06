@@ -27,3 +27,13 @@ extract_codes_insee_com <- function(iris_vector) {
   }
   codes_insee_com
 }
+
+# Extrait le code à 4 chiffres d'un IRIS
+extract_iris_number <- function (iris_vector) {
+  iris_numbers <- c()
+  for (code_iris in iris_vector) {
+    iris_number <- substr(code_iris, 6, 9)
+    if (!iris_number %in% iris_numbers) iris_numbers <- c(iris_numbers, iris_number)
+  }
+  iris_numbers
+}

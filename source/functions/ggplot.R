@@ -1,8 +1,9 @@
-plot_stbrieuc <- function() {
+plot_stbrieuc <- function(sf_in_viewport) {
+  bbox <- st_bbox(sf_in_viewport)
   list(
     coord_sf(
-      xlim = c(269844, 279480),
-      ylim = c(6836000, 6842000),
+      xlim = c(bbox$xmin, bbox$xmax),
+      ylim = c(bbox$ymin, bbox$ymax),
       crs = 2154
     ),
     theme(

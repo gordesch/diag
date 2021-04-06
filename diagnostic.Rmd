@@ -3,8 +3,8 @@ title: "Diagnostic socio-démographique"
 author: "Cantien Collinet"
 date: "`r format(Sys.time(), '%A %d %B %Y')`"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
   word_document: default
 lang: fr
 ---
@@ -22,6 +22,20 @@ library(sf)
 codes_unite_urbaine <- c(
   "22501"
 )
+codes_epci <- c(
+  "200069409"
+)
+codes_insee_com <- c(
+  #"22278", # St Brieuc
+  "22372", # Trémuson
+  "22144", # La Méaugon
+  "22188", # Plerneuf
+  "22215", # Ploufragan
+  "22356", # Tregomeur
+  "22182", # Plélo
+  "22206", # Chateau...
+  "22234" # Plouvara
+)
 codes_IRIS_zone <- c(
   "222780101",
   "222780102",
@@ -30,15 +44,23 @@ codes_IRIS_zone <- c(
   "222780105"
 )
 nom_zone <- "Zone d'étude"
+nom_group_com <- "Communes de l'aire d'influence"
 nom_comm <- "Saint-Brieuc"
 nom_unite_urbaine <- "Unité urbaine"
+nom_epci <- "Saint-Brieuc Armor Agglomération"
 nom_dep <- "Département"
+
+# Niveaux géographiques à afficher, parmi :
+# geo_levels = c("NAT", "DEP", "EPCI", "GROUP_COM", "COM", "GROUP_IRIS", "IRIS")
+geo_levels = c("NAT", "DEP", "EPCI", "GROUP_COM", "GROUP_IRIS")
+
 # FIN de À RENSEIGNER
 
 source("source/functions/extract_dep_and_com.R")
 codes_dep <- extract_codes_dep(codes_IRIS_zone)
 codes_com <- extract_codes_com(codes_IRIS_zone)
-codes_insee_com <- extract_codes_insee_com(codes_IRIS_zone)
+#codes_insee_com <- extract_codes_insee_com(codes_IRIS_zone)
+source("source/functions/data_import.R")
 ```
 
 ## Zone d'étude
@@ -51,13 +73,14 @@ La zone d'étude est constituée par les IRIS dont les codes sont : `r codes_IRI
 source("source/densite.R")
 # Map
 library(ggplot2)
+library(ggsflabel)
 source("source/functions/ggplot.R")
 ggplot() +
   geom_sf(
-    data = departement_COM
+    data = departement_COM,
   ) +
   geom_sf(
-    data = commune_IRIS,
+    data = epci_COM,
     mapping = aes(fill = as.numeric(POPDENS))
   ) +
   scale_fill_viridis_c(
@@ -69,7 +92,7 @@ ggplot() +
   geom_sf (
     data = teo,
     mapping = aes(color = nom),
-    size = 4,
+    size = 1,
     lineend = "round",
     linejoin = "round",
     show.legend = TRUE
@@ -78,15 +101,20 @@ ggplot() +
     name = "Projet en cours",
     type = c("cornflowerblue")
   ) +
+  geom_sf(
+    data = zone,
+    fill = "transparent",
+    color = "black"
+  ) +
   labs(
-    title = "Saint-Brieuc, Densité de population",
+    title = "Saint-Brieuc Armor, Densité de population par commune",
     caption = paste0(
       "Données démographiques : Insee, 2017.\n",
       "Fond de carte : Insee et IGN, 2020.\n",
       "Réalisation : Repérage Urbain, 2021."
     )
   ) +
-  plot_stbrieuc()
+  plot_stbrieuc(epci_COM)
 ```
 
 ```{r demographie, echo=FALSE}
@@ -115,12 +143,18 @@ compute_stats_demog = function(data) {
   mutate(P17_POP = as.integer(P17_POP))
 }
 
-# Niveaux géographiques à afficher, parmi :
-# geo_levels = c("NAT", "DEP", "COM", "GROUP", "IRIS")
-geo_levels_demog = c("COM", "GROUP", "IRIS")
+# Import des données
+demog_IRIS <- import_demographie_departement_IRIS() %>%
+  full_join(import_epci_COM(), by = "INSEE_COM") %>%
+  full_join(import_departement_IRIS(), by = c("CODE_IRIS", "INSEE_COM"))
 
-# Calculs
-source("source/demographie.R")
+# Apply computations to geo levels
+source("source/functions/apply_computations.R")
+demog_stats <- apply_computations(
+  demog_IRIS,
+  compute_stats_demog,
+  geo_levels
+)
 
 # Tableau "Âges"
 demog_stats %>%
@@ -212,12 +246,18 @@ compute_stats_csp = function(data) {
   )
 }
 
-# Niveaux géographiques à afficher, parmi :
-# geo_levels = c("NAT", "DEP", "COM", "GROUP", "IRIS")
-geo_levels_csp = c("COM", "GROUP", "IRIS")
+# Import des données
+csp_IRIS <- import_csp_departement_IRIS() %>%
+  full_join(import_epci_COM(), by = "INSEE_COM") %>%
+  full_join(import_departement_IRIS(), by = c("CODE_IRIS", "INSEE_COM"))
 
-# Calculs
-source("source/csp.R")
+# Apply computations to geo levels
+source("source/functions/apply_computations.R")
+csp_stats <- apply_computations(
+  csp_IRIS,
+  compute_stats_csp,
+  geo_levels
+)
 
 csp_stats %>%
   rename(
@@ -263,12 +303,18 @@ compute_stats_dipl = function(data) {
   )
 }
 
-# Niveaux géographiques à afficher, parmi :
-# geo_levels = c("NAT", "DEP", "COM", "GROUP", "IRIS")
-geo_levels_dipl = c("COM", "GROUP", "IRIS")
+# Import des données
+dipl_IRIS <- import_dipl_departement_IRIS() %>%
+  full_join(import_epci_COM(), by = "INSEE_COM") %>%
+  full_join(import_departement_IRIS(), by = c("CODE_IRIS", "INSEE_COM"))
 
-# Calculs
-source("source/diplomes.R")
+# Apply computations to geo levels
+source("source/functions/apply_computations.R")
+dipl_stats <- apply_computations(
+  dipl_IRIS,
+  compute_stats_dipl,
+  geo_levels
+)
 
 dipl_stats %>%
   rename(
@@ -310,12 +356,18 @@ compute_stats_etud = function(data) {
   )
 }
 
-# Niveaux géographiques à afficher, parmi :
-# geo_levels = c("NAT", "DEP", "COM", "GROUP", "IRIS")
-geo_levels_etud = c("COM", "GROUP", "IRIS")
+# Import des données
+etud_IRIS <- import_etud_departement_IRIS() %>%
+  full_join(import_epci_COM(), by = "INSEE_COM") %>%
+  full_join(import_departement_IRIS(), by = c("CODE_IRIS", "INSEE_COM"))
 
-# Calculs
-source("source/etudiants.R")
+# Apply computations to geo levels
+source("source/functions/apply_computations.R")
+etud_stats <- apply_computations(
+  etud_IRIS,
+  compute_stats_etud,
+  geo_levels
+)
 
 etud_stats %>%
   rename(

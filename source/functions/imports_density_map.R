@@ -40,3 +40,17 @@ import_unite_urbaine_IRIS <- function () {
     )
   )
 }
+
+import_epci_COM <- function() {
+  read_delim(
+    "data/tables/epci.csv",
+    delim = ",",
+    locale = locale("fr", decimal_mark = "."),
+    col_types = cols_only(
+      CODGEO = col_character(),
+      EPCI = col_character()
+    )
+  ) %>%
+    rename(INSEE_COM = CODGEO) %>%
+    filter(EPCI == code_epci)
+}
