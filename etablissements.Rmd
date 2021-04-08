@@ -1,0 +1,345 @@
+---
+title: "Entreprises autour de l'aéroport de Strasbourg"
+author: "Cantien Collinet"
+date: "4/6/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+    number_sections: yes
+    keep_tex: yes
+lang: fr
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(vroom)
+library(readxl)
+library(haven)
+library(huxtable)
+library(gtsummary)
+library(sf)
+library(openxlsx)
+```
+
+# Constitution de la base
+
+## Fichier SIRENE des établissements dans la zone
+
+On commence par interroger la base SIRENE des établissements situés dans les communes concernées : <https://www.sirene.fr/sirene/public/creation-fichier>.
+
+Les communes demandées sont :
+
+- ENTZHEIM
+- HANGENBIETEN
+- DUTTLENHEIM
+- DUPPIGHEIM
+- ERNOLSHEIM-BRUCHE
+- HOLTZHEIM
+- WOLFISHEIM
+
+Le fichier correspondant est placé dans `data/tables/sirene-all.csv`.
+La liste des variables est disponible sur : <https://www.sirene.fr/sirene/public/static/liste-variables>.
+
+## Géocodage du fichier SIRENE
+
+On géocode le fichier grâce au service disponible sur <https://adresse.data.gouv.fr/csv>.
+Critères :
+
+- numeroVoieEtablissement
+- typeVoieEtablissement
+- libelleVoieEtablissement
+- complementAdresseEtablissement
+- codePostalEtablissement
+- libelleCommuneEtablissement
+
+Paramètres avancés : code INSEE = codeCommuneEtablissement.
+
+Le fichier correspondant est placé dans `data/tables/sirene-all-geocoded.csv`.
+
+## Nettoyage du fichier SIRENE
+
+On importe le fichier `data/tables/sirene-all.geocoded.csv` dans R, en ne garde que les colonnes qui nous intéressent.
+
+```{r import_sanitize_etablissements, cache=TRUE, echo=FALSE}
+sirene_all <- vroom(
+  "data/tables/sirene-all.geocoded.csv",
+  delim = ",",
+  col_types = cols_only(
+    siren = col_character(),
+    nic = col_character(),
+    siret = col_character(),
+    trancheEffectifsEtablissement = col_character(),
+    etablissementSiege = col_character(),
+    categorieJuridiqueUniteLegale = col_character(),
+    denominationUniteLegale = col_character(),
+    activitePrincipaleUniteLegale = col_character(),
+    trancheEffectifsUniteLegale = col_character(),
+    categorieEntreprise = col_character(),
+    complementAdresseEtablissement = col_character(),
+    numeroVoieEtablissement = col_character(),
+    typeVoieEtablissement = col_character(),
+    libelleVoieEtablissement = col_character(),
+    codePostalEtablissement = col_character(),
+    libelleCommuneEtablissement = col_character(),
+    distributionSpecialeEtablissement = col_character(),
+    codeCommuneEtablissement = col_character(),
+    codeCedexEtablissement = col_character(),
+    libelleCedexEtablissement = col_character(),
+    enseigne1Etablissement = col_character(),
+    denominationUsuelleEtablissement = col_character(),
+    activitePrincipaleEtablissement = col_character(),
+    caractereEmployeurEtablissement = col_character(),
+    latitude = col_character(),
+    longitude = col_character()
+  )
+)
+
+# Etiquettes de données
+source("source/functions/add_labels_sirene-all.R")
+
+# Codes NAF : https://www.insee.fr/fr/information/2120875
+# (2 premières lignes supprimées car mise en page)
+
+# Codes Tous niveaux
+codes_naf_tous_niv <- read_excel("data/tables/naf2008_5_niveaux.xls") %>%
+  rename(
+    activitePrincipaleUniteLegale = NIV5,
+    naf.niv4 = NIV4,
+    naf.niv3 = NIV3,
+    naf.niv2 = NIV2,
+    sectionActivitePrincipaleUniteLegale = NIV1
+  )
+codes_naf_libelles_niv_1 <- read_excel("data/tables/naf2008_liste_n1.xls") %>%
+  rename(
+    sectionActivitePrincipaleUniteLegale = Code,
+    libelleSectionActivitePrincipaleUniteLegale = Libellé
+    )
+# Libellés niveaux 5
+codes_naf_libelles_niv_5 <- read_excel("data/tables/naf2008_liste_n5.xls") %>%
+  rename(
+    activitePrincipaleUniteLegale = Code,
+    libelleActivitePrincipaleUniteLegale = Libellé
+    )
+sirene_all <- sirene_all %>%
+  left_join(codes_naf_tous_niv, by = "activitePrincipaleUniteLegale") %>%
+  left_join(codes_naf_libelles_niv_1, by = "sectionActivitePrincipaleUniteLegale") %>%
+  left_join(codes_naf_libelles_niv_5, by = "activitePrincipaleUniteLegale")
+
+# head(sirene_all)
+```
+
+Il y a `r nrow(sirene_all)` établissements dans les communes de la zone.
+
+## Chiffres d'affaires par SIREN
+
+On récupère les chiffres clés 2020-2019-2018 des entreprises en France sur <https://opendata.datainfogreffe.fr/explore/dataset/chiffres-cles-2020> et on les place dans `data/tables/chiffres-cles-2020.csv`. On importe ce fichier dans R.
+
+```{r import_sanitize_chiffres_cles, cache=TRUE, echo=FALSE}
+chiffres_cles <- vroom(
+  "data/tables/chiffres-cles-2020.csv",
+  delim = ";",
+  col_types = cols_only(
+    "Siren" = col_character(),
+    #"Ville" = col_character(),
+    #"Num. dept." = col_character(),
+    #"Millesime 1" = col_character(),
+    "CA 1" = col_big_integer(),
+    #"Effectif 1" = col_integer(),
+    #"Millesime 2" = col_character(),
+    "CA 2" = col_big_integer(),
+    #"Effectif 2" = col_integer(),
+    #"Millesime 3" = col_character(),
+    "CA 3" = col_big_integer(),
+    #"Effectif 3" = col_integer(),
+    "tranche_ca_millesime_1" = col_character(),
+    "tranche_ca_millesime_2" = col_character(),
+    "tranche_ca_millesime_3" = col_character()
+  ),
+  col_select = list(
+    siren = Siren,
+    CA_1 = "CA 1",
+    CA_2 = "CA 2",
+    CA_3 = "CA 3",
+    tranche_ca_millesime_1,
+    tranche_ca_millesime_2,
+    tranche_ca_millesime_3
+  )
+)
+```
+
+On fusionne les deux tables.
+
+```{r join_chiffres_cles, cache=TRUE, echo=FALSE}
+sirene_all <- sirene_all %>%
+  left_join(chiffres_cles, by = "siren") %>%
+  mutate(
+    CA_1 = as.numeric(CA_1),
+    CA_2 = as.numeric(CA_2),
+    CA_3 = as.numeric(CA_3)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    CA = ifelse(
+      !all(is.na(c(CA_1, CA_2, CA_3))),
+      max(CA_1, CA_2, CA_3, na.rm = TRUE),
+      NA
+    )
+  ) %>%
+  select(-CA_1, -CA_2, -CA_3)
+```
+
+## Filtres
+
+On enlève les entreprises sans employés, les entreprises unipersonnelles, les entreprises de droit public/administratif, les établissements publics des cultes d'Alsace-Lorraine.
+
+```{r filter_employee, cache=TRUE, echo=FALSE}
+# Dictionnaire des catégories juridiques : https://www.insee.fr/fr/information/2028129
+sirene <- sirene_all %>%
+  # PAS sans employés
+  filter(trancheEffectifsUniteLegale != "NN") %>%
+  # PAS Entreprises unipersonnelles
+  filter(categorieJuridiqueUniteLegale != "1000") %>%
+  # PAS public/droit adminitratif
+  filter(!between(as.numeric(categorieJuridiqueUniteLegale), 7000, 7999)) %>%
+  # PAS administration publique
+  filter(sectionActivitePrincipaleUniteLegale != "O") %>%
+  # PAS Établissement public des cultes d'Alsace-Lorraine 
+  filter(categorieJuridiqueUniteLegale != "7430")
+```
+
+Il y a `r nrow(sirene)` établissements ciblés dans les communes de la zone.
+
+```{r distinct_businesses, cache=TRUE, echo=FALSE}
+sirene_entrep <- sirene %>%
+  arrange(siren, factor(etablissementSiege, levels = c("true", "false"))) %>%
+  distinct(siren, .keep_all = TRUE)
+```
+
+## Zones d'activités ciblées
+
+Dans qgis, on dessine les zones d'activité et on enregistre la couche dans `data/spatial/zonesdactivite/zonesdactivite.shp`. Puis on l'importe dans R et on demande les établissements qui sont dans les polygones dessinés.
+```{r zones_dactivite, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+za <- read_sf("data/spatial/zonesdactivite/zonesdactivite.shp")
+sirene_geolocated <- sirene %>%
+  filter(!is.na(longitude)) %>%
+  filter(!is.na(latitude))
+sirene_sf <- st_as_sf(
+  sirene_geolocated,
+  coords = c("longitude", "latitude"),
+  crs = 4326,
+  agr = "constant"
+)
+sirene_za <- st_intersection(sirene_sf, za) %>%
+  select(-id) %>%
+  st_drop_geometry() %>%
+  rename(nom_zone_d_activite = nom)
+```
+
+Il y a `r nrow(sirene_za)` établissements ciblés dans les zones d'activité étudiées.
+
+## Export
+
+Le fichier des établissements de la zone est exporté dans le fichier `data/tables/etablissements.xls`, celui des établissements des zones d'activité dans `data/tables/etablissements-za.xls`.
+```{r export_qgis, cache=TRUE, echo=FALSE}
+write_excel_csv(sirene, "data/tables/etablissements.csv", na="")
+write.xlsx(sirene, "data/tables/etablissements.xlsx")
+write_excel_csv(sirene_za, "data/tables/etablissements-za.csv", na="")
+write.xlsx(sirene_za, "data/tables/etablissements-za.xlsx")
+```
+
+
+# Statistiques
+
+## Dans les communes cibles
+
+```{r codes_naf_communes, echo=FALSE, message=FALSE}
+sirene_by_naf_niv1 <- sirene %>%
+  #group_by(libelleSectionActivitePrincipaleUniteLegale) %>%
+  #count(sort = TRUE) %>%
+  rename("NAF niveau 1" = libelleSectionActivitePrincipaleUniteLegale)
+sirene_by_naf_niv1 %>% tbl_summary(
+  include = c("NAF niveau 1"),
+  sort = list(everything() ~ "frequency")
+)
+```
+
+```{r effectifs_etablissements_communes, echo=FALSE, message=FALSE}
+sirene_bis <- sirene
+sirene_bis$trancheEffectifsEtablissement <- haven::as_factor(sirene_bis$trancheEffectifsEtablissement)
+sirene_bis$trancheEffectifsUniteLegale <- haven::as_factor(sirene_bis$trancheEffectifsUniteLegale)
+sirene_bis %>% tbl_summary(
+  include = c("trancheEffectifsEtablissement", "trancheEffectifsUniteLegale"),
+  #sort = list(everything() ~ "frequency") 
+) %>%
+  bold_labels()
+```
+
+CA 2019 des entreprises auxquelles appartiennent les établissements dans les communés étudiées :
+```{r ca_entreprises_communes, echo=FALSE, message=FALSE}
+sirene %>% tbl_summary(
+  include = c("tranche_ca_millesime_2"),
+  sort = list(everything() ~ "frequency") 
+) %>%
+  bold_labels()
+```
+
+## Dans les zones d'activité cibles
+
+```{r nb_par_za, echo=FALSE, message=FALSE}
+sirene_za %>%
+  tbl_summary(
+    include = c("nom_zone_d_activite"),
+    sort = list(everything() ~ "frequency")
+  )
+```
+
+```{r codes_naf_by_za, echo=FALSE, message=FALSE}
+sirene_by_naf_niv1 <- sirene_za %>%
+  #group_by(libelleSectionActivitePrincipaleUniteLegale) %>%
+  #count(sort = TRUE) %>%
+  rename("NAF niveau 1" = libelleSectionActivitePrincipaleUniteLegale)
+sirene_by_naf_niv1 %>% tbl_summary(
+  include = c(
+    nom_zone_d_activite,
+    "NAF niveau 1"
+  ),
+  by = nom_zone_d_activite,
+  sort = list(everything() ~ "frequency")
+) %>%
+  add_overall(col_label = "Toutes ZA") %>%
+  bold_labels()
+```
+
+```{r effectifs_etablissements_by_za, echo=FALSE, message=FALSE}
+sirene_bis <- sirene_za
+sirene_bis$trancheEffectifsEtablissement <- haven::as_factor(sirene_bis$trancheEffectifsEtablissement)
+sirene_bis$trancheEffectifsUniteLegale <- haven::as_factor(sirene_bis$trancheEffectifsUniteLegale)
+sirene_bis %>% tbl_summary(
+  include = c(
+    nom_zone_d_activite,
+    trancheEffectifsEtablissement,
+    trancheEffectifsUniteLegale),
+  by = nom_zone_d_activite
+) %>%
+  add_overall(col_label = "Toutes ZA") %>%
+  bold_labels()
+```
+
+CA 2019 des entreprises auxquelles appartiennent les établissements dans les ZA étudiées :
+```{r ca_entreprises_by_za, echo=FALSE, message=FALSE}
+sirene_za %>% tbl_summary(
+  include = c(nom_zone_d_activite, "tranche_ca_millesime_2"),
+  by = nom_zone_d_activite,
+  sort = list(everything() ~ "frequency")
+) %>%
+  add_overall(col_label = "Toutes ZA") %>%
+  bold_labels()
+```

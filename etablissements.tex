@@ -1,0 +1,428 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  french,
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Entreprises autour de l'aéroport de Strasbourg},
+  pdfauthor={Cantien Collinet},
+  pdflang={fr},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\ifxetex
+  % Load polyglossia as late as possible: uses bidi with RTL langages (e.g. Hebrew, Arabic)
+  \usepackage{polyglossia}
+  \setmainlanguage[]{french}
+\else
+  \usepackage[main=french]{babel}
+% get rid of language-specific shorthands (see #6817):
+\let\LanguageShortHands\languageshorthands
+\def\languageshorthands#1{}
+\fi
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Entreprises autour de l'aéroport de Strasbourg}
+\author{Cantien Collinet}
+\date{4/6/2021}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\hypertarget{constitution-de-la-base}{%
+\section{Constitution de la base}\label{constitution-de-la-base}}
+
+\hypertarget{fichier-sirene-des-uxe9tablissements-dans-la-zone}{%
+\subsection{Fichier SIRENE des établissements dans la
+zone}\label{fichier-sirene-des-uxe9tablissements-dans-la-zone}}
+
+On commence par interroger la base SIRENE des établissements situés dans
+les communes concernées :
+\url{https://www.sirene.fr/sirene/public/creation-fichier}.
+
+Les communes demandées sont :
+
+\begin{itemize}
+\tightlist
+\item
+  ENTZHEIM
+\item
+  HANGENBIETEN
+\item
+  DUTTLENHEIM
+\item
+  DUPPIGHEIM
+\item
+  ERNOLSHEIM-BRUCHE
+\item
+  HOLTZHEIM
+\item
+  WOLFISHEIM
+\end{itemize}
+
+Le fichier correspondant est placé dans
+\texttt{data/tables/sirene-all.csv}. La liste des variables est
+disponible sur :
+\url{https://www.sirene.fr/sirene/public/static/liste-variables}.
+
+\hypertarget{guxe9ocodage-du-fichier-sirene}{%
+\subsection{Géocodage du fichier
+SIRENE}\label{guxe9ocodage-du-fichier-sirene}}
+
+On géocode le fichier grâce au service disponible sur
+\url{https://adresse.data.gouv.fr/csv}. Critères :
+
+\begin{itemize}
+\tightlist
+\item
+  numeroVoieEtablissement
+\item
+  typeVoieEtablissement
+\item
+  libelleVoieEtablissement
+\item
+  complementAdresseEtablissement
+\item
+  codePostalEtablissement
+\item
+  libelleCommuneEtablissement
+\end{itemize}
+
+Paramètres avancés : code INSEE = codeCommuneEtablissement.
+
+Le fichier correspondant est placé dans
+\texttt{data/tables/sirene-all-geocoded.csv}.
+
+\hypertarget{nettoyage-du-fichier-sirene}{%
+\subsection{Nettoyage du fichier
+SIRENE}\label{nettoyage-du-fichier-sirene}}
+
+On importe le fichier \texttt{data/tables/sirene-all.geocoded.csv} dans
+R, en ne garde que les colonnes qui nous intéressent.
+
+Il y a 3929 établissements dans les communes de la zone.
+
+\hypertarget{chiffres-daffaires-par-siren}{%
+\subsection{Chiffres d'affaires par
+SIREN}\label{chiffres-daffaires-par-siren}}
+
+On récupère les chiffres clés 2020-2019-2018 des entreprises en France
+sur
+\url{https://opendata.datainfogreffe.fr/explore/dataset/chiffres-cles-2020}
+et on les place dans \texttt{data/tables/chiffres-cles-2020.csv}. On
+importe ce fichier dans R.
+
+On fusionne les deux tables.
+
+\hypertarget{filtres}{%
+\subsection{Filtres}\label{filtres}}
+
+On enlève les entreprises sans employés, les entreprises
+unipersonnelles, les entreprises de droit public/administratif, les
+établissements publics des cultes d'Alsace-Lorraine.
+
+Il y a 892 établissements ciblés dans les communes de la zone.
+
+\hypertarget{zones-dactivituxe9s-cibluxe9es}{%
+\subsection{Zones d'activités
+ciblées}\label{zones-dactivituxe9s-cibluxe9es}}
+
+Dans qgis, on dessine les zones d'activité et on enregistre la couche
+dans \texttt{data/spatial/zonesdactivite/zonesdactivite.shp}. Puis on
+l'importe dans R et on demande les établissements qui sont dans les
+polygones dessinés.
+
+Il y a 529 établissements ciblés dans les zones d'activité étudiées.
+
+\hypertarget{export}{%
+\subsection{Export}\label{export}}
+
+Le fichier des établissements de la zone est exporté dans le fichier
+\texttt{data/tables/etablissements.xls}, celui des établissements des
+zones d'activité dans \texttt{data/tables/etablissements-za.xls}.
+
+\hypertarget{statistiques}{%
+\section{Statistiques}\label{statistiques}}
+
+\hypertarget{dans-les-communes-cibles}{%
+\subsection{Dans les communes cibles}\label{dans-les-communes-cibles}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.88}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.12}}@{}}
+\toprule
+\textbf{Characteristic} & \textbf{N = 892} \\
+\midrule
+\endhead
+NAF niveau 1 & \\
+Commerce ; réparation d'automobiles et de motocycles & 168 (19\%) \\
+Construction & 130 (15\%) \\
+Industrie manufacturière & 100 (11\%) \\
+Activités spécialisées, scientifiques et techniques & 95 (11\%) \\
+Activités de services administratifs et de soutien & 80 (9.0\%) \\
+Transports et entreposage & 66 (7.4\%) \\
+Information et communication & 52 (5.8\%) \\
+Activités financières et d'assurance & 41 (4.6\%) \\
+Hébergement et restauration & 40 (4.5\%) \\
+Autres activités de services & 34 (3.8\%) \\
+Santé humaine et action sociale & 25 (2.8\%) \\
+Activités immobilières & 20 (2.2\%) \\
+Enseignement & 12 (1.3\%) \\
+Agriculture, sylviculture et pêche & 11 (1.2\%) \\
+Arts, spectacles et activités récréatives & 9 (1.0\%) \\
+Production et distribution d'électricité, de gaz, de vapeur et d'air
+conditionné & 5 (0.6\%) \\
+Industries extractives & 3 (0.3\%) \\
+Production et distribution d'eau ; assainissement, gestion des déchets
+et dépollution & 1 (0.1\%) \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.90}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.10}}@{}}
+\toprule
+\textbf{Characteristic} & \textbf{N = 892} \\
+\midrule
+\endhead
+\textbf{Effectif établissement} & \\
+0 salarié (n'ayant pas d'effectif au 31/12 mais ayant employé des
+salariés au cours de l'année de référence) & 29 (4.2\%) \\
+1 ou 2 salariés & 196 (28\%) \\
+3 à 5 salariés & 126 (18\%) \\
+6 à 9 salariés & 96 (14\%) \\
+10 à 19 salariés & 102 (15\%) \\
+20 à 49 salariés & 79 (11\%) \\
+50 à 99 salariés & 17 (2.4\%) \\
+100 à 199 salariés & 10 (1.4\%) \\
+200 à 249 salariés & 0 (0\%) \\
+250 à 499 salariés & 5 (0.7\%) \\
+500 à 999 salariés & 1 (0.1\%) \\
+1 000 à 1 999 salariés & 0 (0\%) \\
+2 000 à 4 999 salariés & 0 (0\%) \\
+5 000 à 9 999 salariés & 0 (0\%) \\
+10 000 salariés et plus & 0 (0\%) \\
+Etablissement non employeur (pas de salarié au cours de l'année de
+référence et pas d'effectif au 31/12) & 34 (4.9\%) \\
+Unknown & 197 \\
+\textbf{Effectif unité légale} & \\
+0 salarié (n'ayant pas d'effectif au 31/12 mais ayant employé des
+salariés au cours de l'année de référence) & 30 (3.4\%) \\
+1 ou 2 salariés & 211 (24\%) \\
+3 à 5 salariés & 138 (15\%) \\
+6 à 9 salariés & 95 (11\%) \\
+10 à 19 salariés & 100 (11\%) \\
+20 à 49 salariés & 107 (12\%) \\
+50 à 99 salariés & 41 (4.6\%) \\
+100 à 199 salariés & 43 (4.8\%) \\
+200 à 249 salariés & 13 (1.5\%) \\
+250 à 499 salariés & 26 (2.9\%) \\
+500 à 999 salariés & 37 (4.1\%) \\
+1 000 à 1 999 salariés & 21 (2.4\%) \\
+2 000 à 4 999 salariés & 17 (1.9\%) \\
+5 000 à 9 999 salariés & 4 (0.4\%) \\
+10 000 salariés et plus & 9 (1.0\%) \\
+Etablissement non employeur (pas de salarié au cours de l'année de
+référence et pas d'effectif au 31/12) & 0 (0\%) \\
+\bottomrule
+\end{longtable}
+
+CA 2019 des entreprises auxquelles appartiennent les établissements dans
+les communés étudiées :
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\textbf{Characteristic} & \textbf{N = 892} \\
+\midrule
+\endhead
+\textbf{tranche\_ca\_millesime\_2} & \\
+E + d 1M & 46 (57\%) \\
+A - de 32K & 29 (36\%) \\
+C entre 82K et 250K & 3 (3.7\%) \\
+D entre 250K et 1M & 3 (3.7\%) \\
+Unknown & 811 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{dans-les-zones-dactivituxe9-cibles}{%
+\subsection{Dans les zones d'activité
+cibles}\label{dans-les-zones-dactivituxe9-cibles}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\textbf{Characteristic} & \textbf{N = 529} \\
+\midrule
+\endhead
+nom\_zone\_d\_activite & \\
+aeroparc & 262 (50\%) \\
+plaine bruche & 151 (29\%) \\
+hantgebieten/entzheim & 61 (12\%) \\
+joffre holtzheim & 55 (10\%) \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.88}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.12}}@{}}
+\toprule
+\textbf{Characteristic} & \textbf{N = 529} \\
+\midrule
+\endhead
+NAF niveau 1 & \\
+Commerce ; réparation d'automobiles et de motocycles & 115 (22\%) \\
+Industrie manufacturière & 76 (14\%) \\
+Construction & 72 (14\%) \\
+Activités spécialisées, scientifiques et techniques & 65 (12\%) \\
+Activités de services administratifs et de soutien & 42 (7.9\%) \\
+Information et communication & 42 (7.9\%) \\
+Transports et entreposage & 31 (5.9\%) \\
+Activités financières et d'assurance & 28 (5.3\%) \\
+Activités immobilières & 13 (2.5\%) \\
+Hébergement et restauration & 13 (2.5\%) \\
+Autres activités de services & 12 (2.3\%) \\
+Santé humaine et action sociale & 6 (1.1\%) \\
+Enseignement & 4 (0.8\%) \\
+Arts, spectacles et activités récréatives & 3 (0.6\%) \\
+Industries extractives & 3 (0.6\%) \\
+Production et distribution d'électricité, de gaz, de vapeur et d'air
+conditionné & 2 (0.4\%) \\
+Agriculture, sylviculture et pêche & 1 (0.2\%) \\
+Production et distribution d'eau ; assainissement, gestion des déchets
+et dépollution & 1 (0.2\%) \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.90}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.10}}@{}}
+\toprule
+\textbf{Characteristic} & \textbf{N = 529} \\
+\midrule
+\endhead
+\textbf{Effectif établissement} & \\
+0 salarié (n'ayant pas d'effectif au 31/12 mais ayant employé des
+salariés au cours de l'année de référence) & 16 (4.0\%) \\
+1 ou 2 salariés & 75 (19\%) \\
+3 à 5 salariés & 68 (17\%) \\
+6 à 9 salariés & 62 (16\%) \\
+10 à 19 salariés & 80 (20\%) \\
+20 à 49 salariés & 59 (15\%) \\
+50 à 99 salariés & 15 (3.8\%) \\
+100 à 199 salariés & 7 (1.8\%) \\
+200 à 249 salariés & 0 (0\%) \\
+250 à 499 salariés & 4 (1.0\%) \\
+500 à 999 salariés & 1 (0.3\%) \\
+1 000 à 1 999 salariés & 0 (0\%) \\
+2 000 à 4 999 salariés & 0 (0\%) \\
+5 000 à 9 999 salariés & 0 (0\%) \\
+10 000 salariés et plus & 0 (0\%) \\
+Etablissement non employeur (pas de salarié au cours de l'année de
+référence et pas d'effectif au 31/12) & 12 (3.0\%) \\
+Unknown & 130 \\
+\textbf{Effectif unité légale} & \\
+0 salarié (n'ayant pas d'effectif au 31/12 mais ayant employé des
+salariés au cours de l'année de référence) & 19 (3.6\%) \\
+1 ou 2 salariés & 78 (15\%) \\
+3 à 5 salariés & 72 (14\%) \\
+6 à 9 salariés & 56 (11\%) \\
+10 à 19 salariés & 76 (14\%) \\
+20 à 49 salariés & 75 (14\%) \\
+50 à 99 salariés & 35 (6.6\%) \\
+100 à 199 salariés & 31 (5.9\%) \\
+200 à 249 salariés & 9 (1.7\%) \\
+250 à 499 salariés & 19 (3.6\%) \\
+500 à 999 salariés & 26 (4.9\%) \\
+1 000 à 1 999 salariés & 14 (2.6\%) \\
+2 000 à 4 999 salariés & 12 (2.3\%) \\
+5 000 à 9 999 salariés & 3 (0.6\%) \\
+10 000 salariés et plus & 4 (0.8\%) \\
+Etablissement non employeur (pas de salarié au cours de l'année de
+référence et pas d'effectif au 31/12) & 0 (0\%) \\
+\bottomrule
+\end{longtable}
+
+CA 2019 des entreprises auxquelles appartiennent les établissements dans
+les communés étudiées :
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\textbf{Characteristic} & \textbf{N = 529} \\
+\midrule
+\endhead
+\textbf{tranche\_ca\_millesime\_2} & \\
+E + d 1M & 29 (62\%) \\
+A - de 32K & 15 (32\%) \\
+C entre 82K et 250K & 2 (4.3\%) \\
+D entre 250K et 1M & 1 (2.1\%) \\
+Unknown & 482 \\
+\bottomrule
+\end{longtable}
+
+\end{document}
