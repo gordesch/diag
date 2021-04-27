@@ -15,3 +15,8 @@ huxtable
 gtsummary
 sf
 openxlsx
+tidyselect
+labelled
+sjlabelled
+httr
+jsonlite
