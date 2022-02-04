@@ -34,11 +34,7 @@ codes_insee_com <- c(
 codes_IRIS_zone <- c(
   "692661001",
   "692661204",
-  "692661201",
-  "692660103",
-  "692660902",
-  "692660903",
-  "692661002"
+  "692660902"
 )
 nom_zone <- "Zone d'étude"
 nom_comm <- "Villeurbanne"
